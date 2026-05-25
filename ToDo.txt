@@ -1,0 +1,5 @@
+1) Print Statistics
+2) Collect Data
+3) QuickProfiler
+4) Mode of dumping Profiler
+5) Print all data
