@@ -51,6 +51,7 @@ int main()
 
     // Print recorded profiling data
     // This uses the custom hook we provided to profilerInit()
-    prf::BlockProfiler::printUs();
+    prf::BlockProfiler::printAll(prf::Precision::Micro);
+    prf::BlockProfiler::print(prf::Precision::Milli,"MainThread");
     return 0;
 }
