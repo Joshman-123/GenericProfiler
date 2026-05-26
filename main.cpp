@@ -28,6 +28,12 @@ int main()
 {
     // Enable profiling globally
     prf::getProfileEnabled().store(true);
+
+    prf::profilerInit([](const std::string& output) 
+    {
+        std::cout << "[Gen4] " << output;
+    });
+
     std::cout << "Starting profiled tasks...\n";
 
     {
@@ -43,10 +49,8 @@ int main()
             t.join();
     }
 
-    // Print recorded profiling data with a custom hook (optional)
-    // If no hook is provided, it defaults to std::cout
-    prf::BlockProfiler::printUs([](const std::string& output) {
-        std::cout << "[CUSTOM LOG PREFIX]\n" << output;
-    });
+    // Print recorded profiling data
+    // This uses the custom hook we provided to profilerInit()
+    prf::BlockProfiler::printUs();
     return 0;
 }

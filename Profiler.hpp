@@ -12,6 +12,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <functional>
 namespace prf
 {
     class ScopeProfile;
@@ -36,6 +37,17 @@ namespace prf
     {
         static std::map<std::string, std::unique_ptr<BlockProfiler>, std::less<>> s_instances{};
         return s_instances;
+    }
+
+    inline std::function<void(const std::string&)>& getLogHook()
+    {
+        static std::function<void(const std::string&)> s_logHook = [](const std::string& str) { std::cout << str; };
+        return s_logHook;
+    }
+
+    inline void profilerInit(std::function<void(const std::string&)> &&hook)
+    {
+        getLogHook() = std::move(hook);
     }
 
     class BlockProfiler
@@ -86,7 +98,7 @@ namespace prf
 
         static void printNs()
         {
-            printImpl(1.0, "ns", [](const std::string& str) { std::cout << str; });
+            printImpl(1.0, "ns", getLogHook());
         }
 
         template <typename PrintHook>
@@ -97,7 +109,7 @@ namespace prf
 
         static void printUs()
         {
-            printImpl(1000.0, "us", [](const std::string& str) { std::cout << str; });
+            printImpl(1000.0, "us", getLogHook());
         }
 
         template <typename PrintHook>
@@ -108,7 +120,7 @@ namespace prf
 
         static void printMs()
         {
-            printImpl(1000000.0, "ms", [](const std::string& str) { std::cout << str; });
+            printImpl(1000000.0, "ms", getLogHook());
         }
 
         template <typename PrintHook>
@@ -130,14 +142,21 @@ namespace prf
                 return;
             }
 
+            hook("=========================================\n");
+            hook("             PROFILER STATS              \n");
+            hook("=========================================\n");
+
             std::ostringstream oss;
-            oss << "=========================================\n";
-            oss << "             PROFILER STATS              \n";
-            oss << "=========================================\n";
+            auto flushLine = [&oss, &hook]() {
+                hook(oss.str());
+                oss.str("");
+                oss.clear();
+            };
 
             for (const auto& blockPair : instances)
             {
                 oss << "Block: [" << blockPair.first << "]\n";
+                flushLine();
                 BlockProfiler* profiler = blockPair.second.get();
 
                 std::lock_guard<std::mutex> blockLock{profiler->m_mutex};
@@ -154,6 +173,7 @@ namespace prf
                     << std::setw(12) << maxCol << " | "
                     << std::setw(12) << avgCol << " | "
                     << std::setw(15) << totalCol << " |\n";
+                flushLine();
 
                 if (divisor != 1.0)
                 {
@@ -181,12 +201,11 @@ namespace prf
                             << std::setw(12) << (data.m_avgTimeNs / divisor) << " | "
                             << std::setw(15) << (data.m_totalTimeNs / divisor) << " |\n";
                     }
+                    flushLine();
                 }
 
-                oss << "-----------------------------------------\n";
+                hook("-----------------------------------------\n");
             }
-
-            hook(oss.str());
         }
     private:
         BlockProfiler() = default;
