@@ -2,16 +2,17 @@
 #include <chrono>
 #include <thread>
 #include <vector>
+#include <utility>
 #include "Profiler.hpp"
 
-void workerTask(int sleepMs)
+void workerTask(const int f_sleepMs)
 {
-    prf::ScopeProfile profile("WorkerTasks", "Thread Sleep");
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+    prf::ScopeProfile l_profile("WorkerTasks", "Thread Sleep");
+    std::this_thread::sleep_for(std::chrono::milliseconds(f_sleepMs));
 
     {
-        prf::ScopeProfile subProfile("WorkerTasks", "Inner Loop");
-        for (int i = 0; i < 3; ++i)
+        prf::ScopeProfile l_subProfile("WorkerTasks", "Inner Loop");
+        for (int l_i = 0; l_i < 3; ++l_i)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(15));
         }
@@ -20,38 +21,51 @@ void workerTask(int sleepMs)
 
 void dbQuery()
 {
-    prf::ScopeProfile profile("MainThread", "Database Query");
+    prf::ScopeProfile l_profile("MainThread", "Database Query");
     std::this_thread::sleep_for(std::chrono::milliseconds(120));
 }
 
 int main()
 {
     // Enable profiling globally
-    prf::getProfileEnabled().store(true);
+    prf::BlkProf::getProfileEnabled().store(true);
 
-    prf::profilerInit([](const std::string& output) 
+    prf::ProfileInput l_input{};
+
+    l_input.m_logCallback = [](const std::string& f_output) 
     {
-        std::cout << "[Gen4] " << output;
-    });
+        std::cout << "[Gen4] " << f_output;
+    };
+
+    l_input.m_getCurrentTime = []() -> uint64_t 
+    {
+        return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()
+        ).count());
+    };
+
+    prf::BlkProf::profilerInit(l_input);
 
     std::cout << "Starting profiled tasks...\n";
 
     {
-        prf::ScopeProfile mainProfile("MainThread", "Total Execution");
+        prf::ScopeProfile l_mainProfile("MainThread", "Total Execution");
         
         dbQuery();
 
-        std::vector<std::thread> threads;
-        for (int i = 1; i <= 4; ++i)
-            threads.emplace_back(workerTask, i * 25);
+        std::vector<std::thread> l_threads;
+        for (int l_i = 1; l_i <= 4; ++l_i)
+            l_threads.emplace_back(workerTask, l_i * 25);
 
-        for (auto& t : threads)
-            t.join();
+        for (auto& l_t : l_threads)
+            l_t.join();
     }
 
     // Print recorded profiling data
     // This uses the custom hook we provided to profilerInit()
-    prf::BlockProfiler::printAll(prf::Precision::Micro);
-    prf::BlockProfiler::print(prf::Precision::Milli,"MainThread");
+    prf::BlkProf::printAll(prf::Precision::Micro);
+    std::vector<std::string> l_vecBlock{"WorkerTasks", "MainThread"};
+    prf::BlkProf::print(prf::Precision::Milli, l_vecBlock);
+
     return 0;
 }
