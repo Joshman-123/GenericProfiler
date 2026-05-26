@@ -43,7 +43,7 @@ namespace prf
 
     private:
 
-        struct  
+        struct ScopeData
         {
             uint64_t m_count{};
             uint64_t m_avgTimeNs{};
