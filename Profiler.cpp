@@ -11,7 +11,9 @@ namespace prf
     {
         static ProfileInput l_input = {
             [](const std::string &f_str)
-            { std::cout << f_str; },
+            { 
+                std::cout << f_str; 
+            },
             []() -> uint64_t
             {
                 return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -44,9 +46,9 @@ namespace prf
             {
                 getProfileInput().m_logCallback = f_input.m_logCallback;
             }
-            if (f_input.m_getCurrentTime)
+            if (f_input.m_getCurrentTimeNs)
             {
-                getProfileInput().m_getCurrentTime = f_input.m_getCurrentTime;
+                getProfileInput().m_getCurrentTimeNs = f_input.m_getCurrentTimeNs;
             }
             getProfileInput().m_logCallback("Profiler Status:"+ std::to_string(BlockProfiler::getProfileEnabled().load(std::memory_order_relaxed) ? 1 : 0) + "\n"); });
     }
@@ -93,7 +95,10 @@ namespace prf
         printImpl(l_divisor, l_unit, getProfileInput().m_logCallback, {});
     }
 
-    void BlockProfiler::printImpl(const double f_divisor, const char *const f_unit, const std::function<void(const std::string &)> &f_hook, const std::vector<std::string> &f_targetBlocks)
+    void BlockProfiler::printImpl(const double f_divisor, 
+                                const char *const f_unit, 
+                                const std::function<void(const std::string &)> &f_hook, 
+                                const std::vector<std::string> &f_targetBlocks)
     {
         std::lock_guard<std::mutex> l_lock{s_mapMutex};
         auto &l_instances = getInstances();
@@ -240,7 +245,7 @@ namespace prf
     {
         if (BlockProfiler::getProfileEnabled().load(std::memory_order_relaxed))
         {
-            m_start = getProfileInput().m_getCurrentTime();
+            m_start = getProfileInput().m_getCurrentTimeNs();
         }
     }
 
@@ -248,7 +253,7 @@ namespace prf
     {
         if (BlockProfiler::getProfileEnabled().load(std::memory_order_relaxed))
         {
-            m_end = getProfileInput().m_getCurrentTime();
+            m_end = getProfileInput().m_getCurrentTimeNs();
             const uint64_t l_timeTaken = m_end - m_start;
             m_profiler.add(m_scopeName, l_timeTaken);
         }

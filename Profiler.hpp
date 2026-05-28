@@ -27,8 +27,8 @@ namespace prf
      */
     struct ProfileInput
     {
-        logHook m_logCallback;
-        timeHook m_getCurrentTime;
+        logHook m_logCallback{};
+        timeHook m_getCurrentTimeNs{};
     };
 
     class BlockProfiler;

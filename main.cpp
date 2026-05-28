@@ -40,7 +40,7 @@ int main()
         std::cout << "[Gen4] " << f_output;
     };
 
-    l_input.m_getCurrentTime = []() -> uint64_t 
+    l_input.m_getCurrentTimeNs = []() -> uint64_t 
     {
         return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::steady_clock::now().time_since_epoch()
@@ -66,7 +66,6 @@ int main()
 
     // Print recorded profiling data
     // This uses the custom hook we provided to profilerInit()
-    prf::BlkProf::printAll(prf::Precision::Micro);
     std::vector<std::string> l_vecBlock{workerTasks, mainThread};
     prf::BlkProf::print(prf::Precision::Milli, l_vecBlock);
 
